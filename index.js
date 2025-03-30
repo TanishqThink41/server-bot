@@ -35,7 +35,8 @@ mongoose.connection.on("error", (err) => {
 // ─────────────────────────────────────────────────────────────────────────────
 app.use(
   cors({
-    origin: "*",
+    origin: "http://localhost:5173",
+    credentials: true,
   })
 );
 app.use(bodyParser.json({ limit: "50mb" }));
