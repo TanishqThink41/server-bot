@@ -30,6 +30,8 @@ mongoose.connection.on("error", (err) => {
   console.error("MongoDB connection error:", err);
 });
 
+app.set("trust proxy", 1);
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  EXPRESS APP MIDDLEWARE
 // ─────────────────────────────────────────────────────────────────────────────
