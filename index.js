@@ -122,7 +122,9 @@ app.post("/login", async (req, res) => {
   // Check user in DB
   const user = await User.findOne({ username, password }).exec();
   if (!user) {
-    return res.status(401).json({ success: false, message: "Invalid credentials" });
+    return res
+      .status(401)
+      .json({ success: false, message: "Invalid credentials" });
   }
 
   // Store in session
@@ -208,12 +210,17 @@ app.post("/send-image", (req, res) => {
 
   const { base64Image } = req.body;
   if (!base64Image) {
-    return res.status(400).json({ message: "No base64Image in the request body" });
+    return res
+      .status(400)
+      .json({ message: "No base64Image in the request body" });
   }
+  const dataUri = `data:image/png;base64,${base64Image}`;
 
-  // Broadcast to all phones for this user (in SSE as JSON)
-  broadcastToDeviceType(username, "phone", { type: "image", data: base64Image });
-  return res.json({ success: true });
+  // Broadcast to phone SSE clients
+  broadcastToDeviceType(username, "phone", {
+    type: "image",
+    data: dataUri,
+  });
 });
 
 // Send text from phone -> laptop
