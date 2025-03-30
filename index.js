@@ -22,10 +22,7 @@ if (!MONGOOSE_URI) {
   process.exit(1);
 }
 
-mongoose.connect(MONGOOSE_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+mongoose.connect(MONGOOSE_URI);
 mongoose.connection.on("connected", () => {
   console.log("Connected to MongoDB");
 });
@@ -38,7 +35,7 @@ mongoose.connection.on("error", (err) => {
 // ─────────────────────────────────────────────────────────────────────────────
 app.use(
   cors({
-    origin: true,
+    origin: "*",
     credentials: true,
   })
 );
@@ -56,15 +53,11 @@ app.use(
     saveUninitialized: false,
     store: MongoStore.create({
       mongoUrl: MONGOOSE_URI, // Use the same MongoDB URI as above
-      mongoOptions: {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      },
       // Optional settings (e.g., ttl) can go here
     }),
     cookie: {
       // Example: 1 hour
-      maxAge: 1000 * 60 * 60,
+      maxAge: 3000 * 60 * 60,
     },
   })
 );
