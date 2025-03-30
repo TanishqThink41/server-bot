@@ -35,7 +35,7 @@ mongoose.connection.on("error", (err) => {
 // ─────────────────────────────────────────────────────────────────────────────
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: ["http://localhost:5173", "https://vercel.com/tanishqs-projects-0e55d13a/client-bot/7v2EVJVbMYiSjoBApdn3dNPGXkNp"],
     credentials: true,
   })
 );
@@ -212,6 +212,12 @@ app.post("/send-text", (req, res) => {
   broadcastToDeviceType(username, "laptop", { type: "text", data: text });
   return res.json({ success: true });
 });
+
+app.get("/", (req, res) => {
+  res.send("Welcome to the server!");
+}
+);
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  START SERVER
