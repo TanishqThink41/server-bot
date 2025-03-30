@@ -35,7 +35,7 @@ mongoose.connection.on("error", (err) => {
 // ─────────────────────────────────────────────────────────────────────────────
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://vercel.com/tanishqs-projects-0e55d13a/client-bot/7v2EVJVbMYiSjoBApdn3dNPGXkNp"],
+    origin: ["http://localhost:5173", "https://client-bot-rose.vercel.app/"],
     credentials: true,
   })
 );
