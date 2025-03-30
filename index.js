@@ -35,7 +35,7 @@ mongoose.connection.on("error", (err) => {
 // ─────────────────────────────────────────────────────────────────────────────
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://client-bot-rose.vercel.app/"],
+    origin: ["http://localhost:5173", "https://client-bot-rose.vercel.app"],
     credentials: true,
   })
 );
