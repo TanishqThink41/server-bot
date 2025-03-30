@@ -7,14 +7,13 @@ const MongoStore = require("connect-mongo");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-const User = require("./models/User"); // Your Mongoose model for User
+const User = require("./models/User");
 
 const app = express();
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  MONGOOSE CONNECTION
 // ─────────────────────────────────────────────────────────────────────────────
-
 const MONGOOSE_URI = process.env.MONGOOSE_URI;
 
 if (!MONGOOSE_URI) {
@@ -30,6 +29,7 @@ mongoose.connection.on("error", (err) => {
   console.error("MongoDB connection error:", err);
 });
 
+// If running behind a proxy (e.g., Render, Heroku) with HTTPS, trust the proxy
 app.set("trust proxy", 1);
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,16 +54,15 @@ app.use(
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
-      mongoUrl: MONGOOSE_URI, // Use the same MongoDB URI as above
-      // Optional settings (e.g., ttl) can go here
+      mongoUrl: MONGOOSE_URI,
     }),
     cookie: {
-      // Example: 3 hour
+      // Example: 3 hours
       maxAge: 3000 * 60 * 60,
       // Needed for cross-site requests:
-      sameSite: 'none',
+      sameSite: "none",
       // Must be true if your site is served over HTTPS (e.g., Render):
-      secure: true 
+      secure: true,
     },
   })
 );
@@ -73,10 +72,14 @@ app.use(
 // ─────────────────────────────────────────────────────────────────────────────
 const connections = {};
 
-// Utility function to broadcast an event to all SSE clients of a specific user
+/**
+ * Broadcast an event (any JSON object) to all SSE clients
+ * of a particular device type for a given username.
+ */
 function broadcastToDeviceType(username, deviceType, eventData) {
   if (!connections[username]) return;
   connections[username][deviceType].forEach((res) => {
+    // Convert the eventData object to JSON, then embed it in SSE "data:"
     res.write(`data: ${JSON.stringify(eventData)}\n\n`);
   });
 }
@@ -85,7 +88,7 @@ function broadcastToDeviceType(username, deviceType, eventData) {
 //  AUTH & USER ROUTES
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Register a user (note: storing passwords in plain text is for demonstration only)
+// Register a user (plain text passwords are not secure, but used here for demo)
 app.post("/register", async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
@@ -100,7 +103,7 @@ app.post("/register", async (req, res) => {
       .json({ success: false, message: "Username already taken" });
   }
 
-  // Create new user (plain text password, not secure)
+  // Create new user
   const newUser = new User({ username, password });
   await newUser.save();
 
@@ -122,10 +125,11 @@ app.post("/login", async (req, res) => {
     return res.status(401).json({ success: false, message: "Invalid credentials" });
   }
 
+  // Store in session
   req.session.username = username;
   req.session.deviceType = deviceType;
 
-  // Initialize connections array for user if not exist
+  // Initialize connections for this user if not exist
   if (!connections[username]) {
     connections[username] = {
       laptop: [],
@@ -153,13 +157,13 @@ app.get("/sse/laptop", (req, res) => {
     return res.status(403).send("Forbidden");
   }
 
-  // Prepare SSE headers
+  // Set up SSE headers
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
 
-  // Add to connections
+  // Add to array
   connections[username].laptop.push(res);
 
   // Remove on close
@@ -176,16 +180,14 @@ app.get("/sse/phone", (req, res) => {
     return res.status(403).send("Forbidden");
   }
 
-  // Prepare SSE headers
+  // Set up SSE headers
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
 
-  // Add to connections
   connections[username].phone.push(res);
 
-  // Remove on close
   req.on("close", () => {
     connections[username].phone = connections[username].phone.filter(
       (client) => client !== res
@@ -197,13 +199,19 @@ app.get("/sse/phone", (req, res) => {
 //  CHAT-LIKE ENDPOINTS
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Send image from laptop -> phone
+// Send image from laptop -> phone (Image is in JSON body as base64Image)
 app.post("/send-image", (req, res) => {
   const username = req.session.username;
   if (!username || req.session.deviceType !== "laptop") {
     return res.status(403).json({ message: "Forbidden" });
   }
+
   const { base64Image } = req.body;
+  if (!base64Image) {
+    return res.status(400).json({ message: "No base64Image in the request body" });
+  }
+
+  // Broadcast to all phones for this user (in SSE as JSON)
   broadcastToDeviceType(username, "phone", { type: "image", data: base64Image });
   return res.json({ success: true });
 });
@@ -221,9 +229,7 @@ app.post("/send-text", (req, res) => {
 
 app.get("/", (req, res) => {
   res.send("Welcome to the server!");
-}
-);
-
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  START SERVER
