@@ -1,13 +1,13 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const session = require("express-session");
+const MongoStore = require("connect-mongo");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-const User = require("./models/User");
-
-require("dotenv").config();
-
+const User = require("./models/User"); // Your Mongoose model for User
 
 const app = express();
 
@@ -15,14 +15,17 @@ const app = express();
 //  MONGOOSE CONNECTION
 // ─────────────────────────────────────────────────────────────────────────────
 
-const MONGOOSE_URI = process.env.MONGOOSE_URI
+const MONGOOSE_URI = process.env.MONGOOSE_URI;
 
 if (!MONGOOSE_URI) {
-    console.error("Error: MONGOOSE_URI is not defined in the .env file");
-    process.exit(1);
+  console.error("Error: MONGOOSE_URI is not defined in the .env file");
+  process.exit(1);
 }
 
-mongoose.connect(MONGOOSE_URI);
+mongoose.connect(MONGOOSE_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
 mongoose.connection.on("connected", () => {
   console.log("Connected to MongoDB");
 });
@@ -43,12 +46,26 @@ app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
 
-// Session (memory-based for demo; consider store for production)
+// ─────────────────────────────────────────────────────────────────────────────
+//  SESSION CONFIGURATION WITH connect-mongo
+// ─────────────────────────────────────────────────────────────────────────────
 app.use(
   session({
-    secret: "some-secret-key",
+    secret: process.env.SESSION_SECRET || "fallback-secret-key",
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: MONGOOSE_URI, // Use the same MongoDB URI as above
+      mongoOptions: {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      },
+      // Optional settings (e.g., ttl) can go here
+    }),
+    cookie: {
+      // Example: 1 hour
+      maxAge: 1000 * 60 * 60,
+    },
   })
 );
 
@@ -69,7 +86,7 @@ function broadcastToDeviceType(username, deviceType, eventData) {
 //  AUTH & USER ROUTES
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Register a user (plain text password, for demonstration only)
+// Register a user (note: storing passwords in plain text is for demonstration only)
 app.post("/register", async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
@@ -77,14 +94,14 @@ app.post("/register", async (req, res) => {
   }
 
   // Check if user exists
-  const existing = await User.findOne({ username }).exec();
-  if (existing) {
+  const existingUser = await User.findOne({ username }).exec();
+  if (existingUser) {
     return res
       .status(400)
       .json({ success: false, message: "Username already taken" });
   }
 
-  // Create new user (plain text password)
+  // Create new user (plain text password, not secure)
   const newUser = new User({ username, password });
   await newUser.save();
 
