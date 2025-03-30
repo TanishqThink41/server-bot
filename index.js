@@ -56,8 +56,12 @@ app.use(
       // Optional settings (e.g., ttl) can go here
     }),
     cookie: {
-      // Example: 1 hour
+      // Example: 3 hour
       maxAge: 3000 * 60 * 60,
+      // Needed for cross-site requests:
+      sameSite: 'none',
+      // Must be true if your site is served over HTTPS (e.g., Render):
+      secure: true 
     },
   })
 );
