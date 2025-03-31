@@ -35,12 +35,28 @@ app.set("trust proxy", 1);
 // ─────────────────────────────────────────────────────────────────────────────
 //  EXPRESS APP MIDDLEWARE
 // ─────────────────────────────────────────────────────────────────────────────
-app.use(
-  cors({
-    origin: ["http://localhost:5173", "https://client-bot-rose.vercel.app"],
-    credentials: true,
-  })
-);
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",")
+  : "https://client-bot-rose.vercel.app";
+
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps, curl, etc.)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        const msg =
+          "The CORS policy for this site does not allow access from the specified origin.";
+        return callback(new Error(msg), false);
+      },
+      credentials: true,
+    })
+  );
+
+
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
@@ -239,6 +255,10 @@ app.post("/send-text", (req, res) => {
 
 app.get("/", (req, res) => {
   res.send("Welcome to the server!");
+});
+
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: "Not found" });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
