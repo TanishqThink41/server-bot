@@ -221,6 +221,9 @@ app.post("/send-image", (req, res) => {
     type: "image",
     data: dataUri,
   });
+
+  // Send success response
+  res.json({ success: true, message: "Image sent successfully" });
 });
 
 // Send text from phone -> laptop
