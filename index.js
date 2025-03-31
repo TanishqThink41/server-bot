@@ -105,34 +105,40 @@ function broadcastToDeviceType(username, deviceType, eventData) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Register a user (plain text passwords are not secure, but used here for demo)
-app.post("/register", async (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ success: false, message: "Missing fields" });
-  }
+// app.post("/register", async (req, res) => {
+//   const { username, password } = req.body;
+//   if (!username || !password) {
+//     return res.status(400).json({ success: false, message: "Missing fields" });
+//   }
 
-  // Check if user exists
-  const existingUser = await User.findOne({ username }).exec();
-  if (existingUser) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Username already taken" });
-  }
+//   // Check if user exists
+//   const existingUser = await User.findOne({ username }).exec();
+//   if (existingUser) {
+//     return res
+//       .status(400)
+//       .json({ success: false, message: "Username already taken" });
+//   }
 
-  // Create new user
-  const newUser = new User({ username, password });
-  await newUser.save();
+//   // Create new user
+//   const newUser = new User({ username, password });
+//   await newUser.save();
 
-  return res.json({ success: true, message: "Registered successfully" });
-});
+//   return res.json({ success: true, message: "Registered successfully" });
+// });
 
 // Login route
 app.post("/login", async (req, res) => {
-  const { username, password, deviceType } = req.body;
-  if (!username || !password || !deviceType) {
+  let { username, password, deviceType } = req.body;
+
+  if (!username || !password) {
     return res
       .status(400)
       .json({ success: false, message: "Missing login fields" });
+  }
+
+  // Set default deviceType to "phone" if not provided
+  if (!deviceType) {
+    deviceType = "phone";
   }
 
   // Check user in DB
