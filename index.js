@@ -212,7 +212,7 @@ app.post("/send-image", (req, res) => {
   if (!base64Image) {
     return res
       .status(400)
-      .json({ message: "No base64Image in the request body" });
+      .json({ success:false, message: "No base64Image in the request body" });
   }
   const dataUri = `data:image/png;base64,${base64Image}`;
 
